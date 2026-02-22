@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Glass Checklist Pro</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-pink: #f472b6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .mobile-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 30px 15px 120px 15px;
+        }
+
+        /* Countdown Timer */
+        .countdown-container {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--glass-border);
+            border-radius: 24px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            margin-bottom: 20px;
+        }
+
+        .days-number {
+            display: block;
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(to bottom, #fff, var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .days-label {
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* Quote Popup Styling */
+        #quote-popup {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-150%);
+            width: calc(100% - 40px);
+            max-width: 400px;
+            background: rgba(74, 222, 128, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--accent-green);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 1000;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        #quote-popup.show { transform: translateX(-50%) translateY(0); }
+        .quote-text { font-style: italic; font-weight: 500; margin-bottom: 10px; display: block; }
+        .air-reminder { font-size: 0.8rem; color: var(--accent-blue); font-weight: 700; text-transform: uppercase; }
+
+        /* Date Tabs */
+        .date-tab {
+            margin-bottom: 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .date-tab.all-done {
+            border-color: var(--accent-green);
+            background: rgba(74, 222, 128, 0.05);
+        }
+
+        .date-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .status-icon { color: var(--text-dim); transition: transform 0.4s; }
+
+        .task-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s;
+            padding: 0 20px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .date-tab.open .task-list { max-height: 600px; padding: 10px 20px 20px 20px; }
+        .date-tab.open .status-icon { transform: rotate(180deg); color: var(--accent-blue); }
+
+        /* Checkbox UI */
+        .task-item { display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        input[type="checkbox"] {
+            appearance: none; width: 24px; height: 24px; border: 2px solid var(--glass-border);
+            border-radius: 8px; margin-right: 15px; cursor: pointer; position: relative; transition: 0.2s;
+        }
+        input[type="checkbox"]:checked { background: var(--accent-green); border-color: var(--accent-green); }
+        input[type="checkbox"]:checked::after { content: '✓'; position: absolute; color: #000; font-size: 16px; left: 4px; top: -1px; font-weight: bold; }
+        label { flex-grow: 1; color: var(--text-dim); transition: 0.3s; }
+        input[type="checkbox"]:checked + label { color: var(--text-main); text-decoration: line-through rgba(255,255,255,0.2); }
+
+        /* Footer */
+        .footer-controls {
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 40px); max-width: 460px;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); padding: 10px; display: flex; gap: 10px; border-radius: 24px;
+        }
+
+        button { flex: 1; padding: 16px; border-radius: 18px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-save { background: var(--accent-blue); color: #000; }
+        .btn-reset { background: rgba(0, 0, 0, 0.3); color: #ff453a; }
+    </style>
+</head>
+<body>
+
+<div id="quote-popup">
+    <span class="quote-text" id="random-quote">"Keep going, you're doing great!"</span>
+    <span class="air-reminder">🌬️ Air quality check: Keep AQI < 100 for a healthy run!</span>
+</div>
+
+<div class="mobile-container">
+    <div class="countdown-container">
+        <span id="days-count" class="days-number">--</span>
+        <span class="days-label">Days until May 10, 2026</span>
+    </div>
+
+    <div id="date-list"></div>
+
+    <div class="footer-controls">
+        <button class="btn-save" onclick="saveAll()">Save State</button>
+        <button class="btn-reset" onclick="resetAll()">Reset</button>
+    </div>
+</div>
+
+<script>
+    const targetDate = new Date("May 10, 2026 00:00:00").getTime();
+    const quotes = [
+        "One step at a time. You've got this!",
+        "Discipline is the bridge between goals and accomplishment.",
+        "Your future self will thank you for today.",
+        "Success is the sum of small efforts, repeated day in and day out.",
+        "Focus on progress, not perfection."
+    ];
+
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        document.getElementById("days-count").innerText = distance < 0 ? "GOAL!" : days;
+    }
+
+    const scheduleData = [
+    {
+        date: "22/02/2026",
+        tasks: [
+            { id: "220226_p", text: "Physics: mechanics Booster, rotation" },
+            { id: "220226_c", text: "Chemistry: Chemical Kinetics+Radioactivity" },
+            { id: "220226_m", text: "Mathematics: AOD" }
+        ]
+    },
+    {
+        date: "23/02/2026",
+        tasks: [
+            { id: "230226_p", text: "Physics: rotation" },
+            { id: "230226_c", text: "Chemistry: Liquid Solutions + Amines" },
+            { id: "230226_m", text: "Mathematics: AOD" }
+        ]
+    },
+    {
+        date: "24/02/2026",
+        tasks: [
+            { id: "240226_p", text: "Physics: rotation" },
+            { id: "240226_c", text: "Chemistry: Electrochemistry + Aldehyde Ketone Acid" },
+            { id: "240226_m", text: "Mathematics: IDI" }
+        ]
+    },
+    {
+        date: "25/02/2026",
+        tasks: [
+            { id: "250226_p", text: "Physics: rotation" },
+            { id: "250226_c", text: "Chemistry: Electrochemistry + Alcohol Phenol Ether, Haloalkane" },
+            { id: "250226_m", text: "Mathematics: IDI" }
+        ]
+    },
+    {
+        date: "26/02/2026",
+        tasks: [
+            { id: "260226_p", text: "Physics: COM collisions, WPE" },
+            { id: "260226_c", text: "Chemistry: Biomolecules (NCERT) + D and F" },
+            { id: "260226_m", text: "Mathematics: DI" }
+        ]
+    },
+    {
+        date: "27/02/2026",
+        tasks: [
+            { id: "270226_p", text: "Physics: Kinematics, NLM, Circular, Friction" },
+            { id: "270226_c", text: "Chemistry: Coordination Chemistry + all revision" },
+            { id: "270226_m", text: "Mathematics: DI" }
+        ]
+    },
+    {
+        date: "28/02/2026",
+        tasks: [
+            { id: "280226_p", text: "Physics: Mechanics IRODOV" },
+            { id: "280226_c", text: "Chemistry: BOARD PAPER" },
+            { id: "280226_m", text: "Mathematics: DI" }
+        ]
+    }
+];
+
+    function init() {
+        updateCountdown();
+        const saved = JSON.parse(localStorage.getItem('glassProgressV3')) || {};
+        const listContainer = document.getElementById('date-list');
+        listContainer.innerHTML = '';
+
+        scheduleData.forEach(day => {
+            const dateId = day.date.replace(/\W/g, '');
+            const allChecked = day.tasks.every(t => saved[t.id] === true);
+            
+            const tab = document.createElement('div');
+            tab.className = `date-tab ${allChecked ? 'all-done' : ''}`;
+            tab.id = `tab-${dateId}`;
+
+            tab.innerHTML = `
+                <div class="date-header" onclick="toggleAccordion('${dateId}')">
+                    <span>${day.date}</span>
+                    <span class="status-icon" id="icon-${dateId}">${allChecked ? '✓' : '▼'}</span>
+                </div>
+                <div class="task-list" id="list-${dateId}">
+                    ${day.tasks.map(task => `
+                        <div class="task-item">
+                            <input type="checkbox" id="${task.id}" 
+                                   ${saved[task.id] ? 'checked' : ''} 
+                                   onchange="updateTabStatus('${dateId}')">
+                            <label for="${task.id}">${task.text}</label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            listContainer.appendChild(tab);
+        });
+    }
+
+    function toggleAccordion(dateId) {
+        document.getElementById(`tab-${dateId}`).classList.toggle('open');
+    }
+
+    function updateTabStatus(dateId) {
+        const tab = document.getElementById(`tab-${dateId}`);
+        const checkboxes = tab.querySelectorAll('input[type="checkbox"]');
+        const icon = document.getElementById(`icon-${dateId}`);
+        const allDone = Array.from(checkboxes).every(cb => cb.checked);
+        
+        if (allDone && !tab.classList.contains('all-done')) {
+            tab.classList.add('all-done');
+            icon.innerText = '✓';
+            showSuccessPopup();
+        } else if (!allDone) {
+            tab.classList.remove('all-done');
+            icon.innerText = '▼';
+        }
+    }
+
+    function showSuccessPopup() {
+        const popup = document.getElementById('quote-popup');
+        const quoteEl = document.getElementById('random-quote');
+        quoteEl.innerText = `"${quotes[Math.floor(Math.random() * quotes.length)]}"`;
+        
+        popup.classList.add('show');
+        setTimeout(() => popup.classList.remove('show'), 5000);
+    }
+
+    function saveAll() {
+        const progress = {};
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            progress[cb.id] = cb.checked;
+        });
+        localStorage.setItem('glassProgressV3', JSON.stringify(progress));
+        alert("Progress Locked Locally!");
+    }
+
+    function resetAll() {
+        if(confirm("Clear everything?")) {
+            localStorage.removeItem('glassProgressV3');
+            init();
+        }
+    }
+
+    init();
+    setInterval(updateCountdown, 86400000);
+</script>
+</body>
+  </html>
